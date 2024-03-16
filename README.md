@@ -13,3 +13,38 @@ Dit revolutionizes database management by introducing a version control system t
 **Enhanced Data Management:** For projects involving data analysis or machine learning, Dit provides version control for datasets, enabling more efficient experimentation and collaboration on data-driven projects.
 
 By providing a robust, intuitive tool for database version control, Dit fills a crucial gap in the modern developer's toolkit, making database-related tasks safer, faster, and more collaborative. This contributes significantly to the developer productivity track by reducing manual overhead, speeding up development cycles, and fostering better collaboration and consistency across projects.
+
+# 🦄 Installation
+#### 1. Clone the repo
+```
+git clone https://github.com/sr2echa/dit.git
+```
+#### 2. Install the requirements
+```
+pip install -r requirements.txt
+```
+#### 3. Install Dit
+```
+pip install .
+```
+
+# ✨ Useage
+
+<samp>
+
+```
+ Dit                                                                                  
+ Dit is a version control system for your databases.
+
+╭─ Commands ─────────────────────────────────────────────────────────────────────────╮
+│ branch        Create a new branch from the current commit.                         │
+│ commit        Commit your database changes                                         │
+│ diff          Compare the current database with a specific commit hash.            │
+│ init          Initialize Dit Repository                                            │
+│ log           Shows the commit log of the dit repo                                 │
+│ merge         Merge a branch into the current branch.                              │
+│ reset         Reset the database to a specific state by commit hash.               │
+╰────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+</samp>
