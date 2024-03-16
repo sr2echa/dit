@@ -1,2 +1,0 @@
-import colorama
-colorama.init()

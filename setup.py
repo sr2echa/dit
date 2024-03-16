@@ -24,7 +24,7 @@ setup(
     long_description_content_type="text/markdown",
     entry_points='''
         [console_scripts]
-        dit=Dit.core:app
+        dit=Dit.core:cli
     ''',
 )
 

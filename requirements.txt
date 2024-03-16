@@ -1,4 +1,5 @@
 setuptools
 mysql-connector-python
 rich-click
-typer[all]
+rich
+questionary

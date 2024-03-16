@@ -1,8 +1,9 @@
-import typer
+import rich_click as click
 
-app = typer.Typer(pretty_exceptions_enable=True)
-
-@app.command()
-def main():
-    """Execute the commit command."""
-    typer.echo("Committing changes.")
+@click.command()
+@click.argument('name')
+def cli(name):
+    """Greet a user by name.
+    
+    Hiii"""
+    click.echo(f"Hello, {name}!")

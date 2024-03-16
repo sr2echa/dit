@@ -1,4 +1,4 @@
-# IMPORTS
+# IMPORTSHEAD
 import os
 import pickle
 import json
@@ -28,19 +28,6 @@ def save_compressed_data(compressed_data, filename) -> None:
     with open(filename, 'wb') as file:
         file.write(compressed_data)
 
-def fetch_all_tables(database_name) -> list:
-    query = "SHOW TABLES;"
-    config = get_config()
-    cnx = mysql.connector.connect(**config)
-    cursor = cnx.cursor()
-    cursor.execute(f"USE {database_name}")
-    cursor.execute(query)
-    
-    tables = [row[0] for row in cursor.fetchall()]
-    
-    cursor.close()
-    cnx.close()
-    return tables
 
 def fetch_table_dependencies(database_name) -> dict:
     query = """
@@ -52,7 +39,7 @@ def fetch_table_dependencies(database_name) -> dict:
         REFERENCED_TABLE_SCHEMA = %s AND 
         REFERENCED_TABLE_NAME IS NOT NULL;
     """
-    config = get_config()
+    config = get_config(database_name)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute(query, (database_name,))
@@ -114,7 +101,7 @@ def export_table_data(cursor, table_name) -> str:
     return ''.join(insert_statements)
 
 def get_database_state(database_name) -> str:
-    all_tables = fetch_all_tables(database_name)
+    all_tables = get_tables(database_name)
     dependencies = fetch_table_dependencies(database_name)
     
     # Generate a full list of tables, including those without dependencies
@@ -125,7 +112,7 @@ def get_database_state(database_name) -> str:
 
     sorted_tables = topological_sort(full_dependency_graph)
     
-    config = get_config()
+    config = get_config(database_name)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute(f"USE {database_name}")
@@ -151,9 +138,9 @@ def check_init(db: str) -> bool:
     return os.path.exists(get_directory(db))
 
 def update_history(db: str, hash: str) -> None:
-    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
     history.append(hash)
-    pickle.dump(history, open(get_directory(db) + r"\history.bin", "wb"))
+    pickle.dump(history, open(get_directory(db) + r"\past.lore", "wb"))
 
 def execute_multi_commands(connection, multi_commands) -> None:
     try:
@@ -171,7 +158,7 @@ def execute_multi_commands(connection, multi_commands) -> None:
         print("Error executing commands:", err)
 
 def recreate(db: str, commands: str) -> None:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
@@ -183,7 +170,7 @@ def recreate(db: str, commands: str) -> None:
     cnx.close()
 
 def get_tables(db: str) -> list:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("USE {}".format(db))
@@ -194,7 +181,7 @@ def get_tables(db: str) -> list:
     return tables
 
 def get_schema(db: str) -> dict:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("USE {}".format(db))
@@ -209,7 +196,7 @@ def get_schema(db: str) -> dict:
     return schema
 
 def create_db(db: str) -> None:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("CREATE DATABASE {}".format(db))
@@ -217,23 +204,23 @@ def create_db(db: str) -> None:
     cnx.close()
 
 def drop_db(db: str) -> None:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
     cursor.close()
     cnx.close()
 
-def get_config() -> dict:
-    with open(home_directory + r"\config.json", "r") as f:
-        return json.load(f)
+def get_config(db:str) -> dict:
+    with open(home_directory + r"\\" + db + r"\HEAD", "rb") as f:
+        return pickle.load(f)
 
 def get_recent_hash(db: str) -> str:
-    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
     return history[-1]
 
 def get_table_data(db: str, table: str) -> list:
-    config = get_config()
+    config = get_config(db)
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     cursor.execute("USE {}".format(db))
@@ -243,15 +230,15 @@ def get_table_data(db: str, table: str) -> list:
     cnx.close()
     return data
 
-def get_databases() -> list:
-    config = get_config()
-    cnx = mysql.connector.connect(**config)
-    cursor = cnx.cursor()
-    cursor.execute("SHOW DATABASES")
-    databases = [db[0] for db in cursor]
-    cursor.close()
-    cnx.close()
-    return databases
+# def get_databases() -> list:
+#     config = get_config()
+#     cnx = mysql.connector.connect(**config)
+#     cursor = cnx.cursor()
+#     cursor.execute("SHOW DATABASES")
+#     databases = [db[0] for db in cursor]
+#     cursor.close()
+#     cnx.close()
+#     return databases
 
 
 # COMMANDS
@@ -267,12 +254,13 @@ def setup(user: str = "root", pwd: str = "root", host: str = "127.0.0.1", port: 
         json.dump(config, f, indent=4)
 
 
-def init(db: str) -> None:
-    if check_init(db):
+def init(data: dict) -> None:
+    if check_init(data['database']):
         raise Exception("dit already initialized")
     else:
-        os.makedirs(get_directory(db))
-        pickle.dump([], open(get_directory(db) + r"\history.bin", "wb"))
+        os.makedirs(get_directory(data['database']), exist_ok=True)
+        pickle.dump(data, open(get_directory(data['database']) + r"\HEAD", "wb"))
+        pickle.dump([], open(get_directory(data["database"]) + r"\past.lore", "wb"))
 
 def commit(db: str, msg: str) -> None:
     if not check_init(db):
@@ -280,7 +268,7 @@ def commit(db: str, msg: str) -> None:
     
     commands = get_database_state(db)
     hash = generate_hash(commands.encode())
-    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
 
     if not history or history[-1] != hash:
         data = [msg, commands]
@@ -295,7 +283,7 @@ def log(db: str) -> list:
     if not check_init(db):
         raise Exception("dit not initialized")
     
-    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
     history = history[::-1]
 
     logs = []
@@ -329,7 +317,7 @@ def discard_changes(db: str) -> None:
     if not check_init(db):
         raise Exception("dit not initialized")
     
-    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
     if not history:
         raise Exception("No changes to discard")
     else:
@@ -351,8 +339,8 @@ def merge(db1: str, db2: str) -> None:
     if not check_init(db1) or not check_init(db2):
         raise Exception("dit not initialized")
     
-    history1 = pickle.load(open(get_directory(db1) + r"\history.bin", "rb"))
-    history2 = pickle.load(open(get_directory(db2) + r"\history.bin", "rb"))
+    history1 = pickle.load(open(get_directory(db1) + r"\past.lore", "rb"))
+    history2 = pickle.load(open(get_directory(db2) + r"\past.lore", "rb"))
     recent1 = history1[-1]
     recent2 = history2[-1]
     
