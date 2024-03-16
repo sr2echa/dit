@@ -215,6 +215,14 @@ def create_db(db: str) -> None:
     cursor.close()
     cnx.close()
 
+def drop_db(db: str) -> None:
+    config = get_config()
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
+    cursor.close()
+    cnx.close()
+
 def get_config() -> dict:
     with open(home_directory + r"\config.json", "r") as f:
         return json.load(f)
@@ -348,3 +356,4 @@ Enter 2 to keep changes from Database 2
         final = ";\n".join(final)
         recreate(db1, final)
         commit(db1, f"Merged {db2} into {db1}")
+        os.remove(get_directory(db2))
