@@ -595,5 +595,26 @@ def recreate_2(db: str, commands: str, config) -> None:
     cursor.close()
     cnx.close()
 
+def get_history(db: str) -> dict:
+    '''Returns the history of the database'''
+    if not check_init(db):
+        raise Exception("dit not initialized")
+    
+    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
+    history = history[::-1]
+
+    logs = []
+
+    for hash in history:
+        compressed_data = open(get_directory(db) + r"\{}.rarc".format(hash), 'rb').read()
+        pickled_data = decompress_data(compressed_data)
+        unpickled_data = pickle.loads(pickled_data)
+        logs.append([unpickled_data[0], hash])
+    
+    return {
+        "dummy": logs
+    }
+
+
 if __name__ == "__main__":
     reset("tempppp", "d8b61a1035933a45bdad47b1d5d2bf413d6c13c0")
