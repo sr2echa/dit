@@ -99,7 +99,9 @@ import importlib.util
 
 @click.group()
 def cli():
-    """Dit CLI tool."""
+    """Dit
+    
+    Dit is a version control system for databases."""
     pass
 
 def load_command(name: str, filepath: Path):

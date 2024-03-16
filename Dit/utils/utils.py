@@ -159,11 +159,15 @@ def execute_multi_commands(connection, multi_commands) -> None:
 
 def recreate(db: str, commands: str) -> None:
     config = get_config(db)
-    cnx = mysql.connector.connect(**config)
+    # print(config)
+    cnx = mysql.connector.connect(host=config['host'], port=config['port'], user=config['username'], password=config['password'])
     cursor = cnx.cursor()
-    cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
-    cursor.execute("CREATE DATABASE {}".format(db))
-    cursor.execute("USE {}".format(db))
+    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
+    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
+    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
+    cursor.execute("CREATE DATABASE {};".format(db))
+    cursor.execute("USE {};".format(db))
+    # print(commands)
     execute_multi_commands(cnx, commands)
     cursor.execute(commands)
     cursor.close()
@@ -262,22 +266,28 @@ def init(data: dict) -> None:
         pickle.dump(data, open(get_directory(data['database']) + r"\HEAD", "wb"))
         pickle.dump([], open(get_directory(data["database"]) + r"\past.lore", "wb"))
 
-def commit(db: str, msg: str) -> None:
+def commit(db: str, msg: str) -> int:
     if not check_init(db):
         raise Exception("dit not initialized")
     
-    commands = get_database_state(db)
-    hash = generate_hash(commands.encode())
-    history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
+    try:
+        commands = get_database_state(db)
+        hash = generate_hash(commands.encode())
+        history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
 
-    if not history or history[-1] != hash:
-        data = [msg, commands]
-        binary_data = pickle.dumps(data)
-        compressed_data = compress_data(binary_data)
-        save_compressed_data(compressed_data, get_directory(db) + r"\\" + hash + ".dbs")
-        update_history(db, hash)
-    else:
-        print("No changes to commit")
+        if not history or history[-1] != hash:
+            data = [msg, commands]
+            binary_data = pickle.dumps(data)
+            compressed_data = compress_data(binary_data)
+            save_compressed_data(compressed_data, get_directory(db) + r"\\" + hash + ".rarc")
+            update_history(db, hash)
+            return 1
+        else:
+            return 0
+   
+    except Exception as e:
+        raise Exception(e)
+
     
 def log(db: str) -> list:
     if not check_init(db):
@@ -289,7 +299,7 @@ def log(db: str) -> list:
     logs = []
 
     for hash in history:
-        compressed_data = open(get_directory(db) + r"\{}.dbs".format(hash), 'rb').read()
+        compressed_data = open(get_directory(db) + r"\{}.rarc".format(hash), 'rb').read()
         pickled_data = decompress_data(compressed_data)
         unpickled_data = pickle.loads(pickled_data)
         logs.append({
@@ -300,33 +310,46 @@ def log(db: str) -> list:
     return logs
 
 
-def reset(db: str, hash: str) -> None:
+def reset(db: str, hash: str = None) -> None:
     if not check_init(db):
         raise Exception("dit not initialized")
     
-    if not os.path.exists(get_directory(db) + r"\{}.dbs".format(hash)):
+    elif hash is None:
+        hash = get_recent_hash(db)
+    
+    elif not os.path.exists(get_directory(db) + r"\{}.rarc".format(hash)):
         raise Exception("commit does not exist")
     
-    compressed_data = open(get_directory(db) + r"\{}.dbs".format(hash), 'rb').read()
+    compressed_data = open(get_directory(db) + r"\{}.rarc".format(hash), 'rb').read()
     pickled_data = decompress_data(compressed_data)
     unpickled_data = pickle.loads(pickled_data)
     commands = unpickled_data[1]
+    print(commands)
     recreate(db, commands)
 
-def discard_changes(db: str) -> None:
+
+
+
+def discard_changes(db: str) -> int:
     if not check_init(db):
         raise Exception("dit not initialized")
     
     history = pickle.load(open(get_directory(db) + r"\past.lore", "rb"))
     if not history:
-        raise Exception("No changes to discard")
+        return 0 # No changes to discard
     else:
         recent_hash = history[-1]
-        compressed_data = open(get_directory(db) + r"\{}.dbs".format(recent_hash), 'rb').read()
+        hdir = get_directory(db) + r"\{}.rarc".format(recent_hash)
+        # print(hdir)
+        compressed_data = open(hdir, 'rb').read()
         pickled_data = decompress_data(compressed_data)
         unpickled_data = pickle.loads(pickled_data)
         commands = unpickled_data[1]
         recreate(db, commands)
+        return 1 # Changes discarded
+
+
+
 
 def branch(db: str, branch_name: str) -> None:
     if not check_init(db):
@@ -334,6 +357,9 @@ def branch(db: str, branch_name: str) -> None:
     
     shutil.copytree(get_directory(db), get_directory(branch_name))
     recreate(branch_name, get_database_state(db))
+
+
+
 
 def merge(db1: str, db2: str) -> None:
     if not check_init(db1) or not check_init(db2):
@@ -401,11 +427,11 @@ def diff(db: str, hash: str = "recent") -> dict:
     if hash == "recent":
         hash = get_recent_hash(db)
 
-    if not os.path.exists(get_directory(db) + r"\{}.dbs".format(hash)):
+    if not os.path.exists(get_directory(db) + r"\{}.rarc".format(hash)):
         raise Exception("commit does not exist")
     
     # Create new temp database using hash
-    directory = get_directory(db) + r"\{}.dbs".format(hash)
+    directory = get_directory(db) + r"\{}.rarc".format(hash)
     compressed_data = open(directory, 'rb').read()
     pickled_data = decompress_data(compressed_data)
     unpickled_data = pickle.loads(pickled_data)
@@ -465,4 +491,4 @@ def diff(db: str, hash: str = "recent") -> dict:
     }
 
 if __name__ == "__main__":
-    print(log("test_db"))
+    reset("tempppp", "d8b61a1035933a45bdad47b1d5d2bf413d6c13c0")
