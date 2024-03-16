@@ -88,6 +88,7 @@ def export_table_data(cursor, table_name) -> str:
     cursor.execute(f"SELECT * FROM {table_name}")
     rows = cursor.fetchall()
     if not rows:
+        print(f"No data found in table {table_name}")
         return ''
     
     columns = [desc[0] for desc in cursor.description]
@@ -153,7 +154,7 @@ def execute_multi_commands(connection, multi_commands) -> None:
             cursor.execute(command)
         
         connection.commit()
-        print("Commands executed successfully.")
+        # print("Commands executed successfully.")
     except mysql.connector.Error as err:
         print("Error executing commands:", err)
 
@@ -212,8 +213,6 @@ def drop_db(db: str) -> None:
     cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
     cursor.close()
     cnx.close()
-    part = get_directory(db)
-    shutil.rmtree(part)
 
 def get_config(db:str) -> dict:
     with open(home_directory + r"\\" + db + r"\HEAD", "rb") as f:
@@ -243,6 +242,15 @@ def get_table_data(db: str, table: str) -> list:
 #     cursor.close()
 #     cnx.close()
 #     return databases
+
+def drop_table(db: str, table: str) -> None:
+    config = get_config(db)
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    cursor.execute(f"USE {db}")
+    cursor.execute(f"DROP TABLE {table}")
+    cursor.close()
+    cnx.close()
 
 
 # COMMANDS
@@ -324,7 +332,7 @@ def reset(db: str, hash: str = None) -> None:
     pickled_data = decompress_data(compressed_data)
     unpickled_data = pickle.loads(pickled_data)
     commands = unpickled_data[1]
-    print(commands)
+    # print(commands)
     recreate(db, commands)
 
 
@@ -351,73 +359,108 @@ def discard_changes(db: str) -> int:
 
 
 
-def branch(db: str, branch_name: str) -> None:
+def branch(db: str, branch_name: str) -> str:
     if not check_init(db):
         raise Exception("dit not initialized")
     
-    shutil.copytree(get_directory(db), get_directory(branch_name))
-    recreate(branch_name, get_database_state(db))
+    shutil.copytree(get_directory(db), get_directory(f"{db}_branch_{branch_name}"))
+    recreate(f"{db}_branch_{branch_name}", get_database_state(db))
+    return f"{db}_branch_{branch_name}"
 
 
 
+
+# def merge(db1: str, db2: str) -> None:
+#     if not check_init(db1) or not check_init(db2):
+#         raise Exception("dit not initialized")
+    
+#     final = []
+
+#     history1 = pickle.load(open(get_directory(db1) + r"\past.lore", "rb"))
+#     history2 = pickle.load(open(get_directory(db2) + r"\past.lore", "rb"))
+#     recent1 = history1[-1]
+#     recent2 = history2[-1]
+    
+#     if recent1 == recent2:
+#         raise Exception("No changes to merge")
+#     else:
+#         tables1 = set(get_tables(db1))
+#         tables2 = set(get_tables(db2))
+#         common_tables = tables1.intersection(tables2)
+#         all_tables = tables1.union(tables2) 
+
+#         schema1 = get_schema(db1)
+#         schema2 = get_schema(db2)
+
+#         db1_ignore = set()
+#         db2_ignore = set()
+
+#         for table in common_tables:
+#             if schema1[table] != schema2[table]:
+#                 ignore = input(f"""Merge Conflict! Press Enter to resolve the conflict
+# Database 1: {db1}
+# Database 2: {db2}
+# Enter 1 to keep changes from Database 1
+# Enter 2 to keep changes from Database 2
+# [1/2]: """)
+
+#                 if ignore == "1":
+#                     db2_ignore.add(table)
+#                 elif ignore == "2":
+#                     db1_ignore.add(table)
+#                 else:
+#                     raise Exception("Invalid input")
+            
+#             else:
+#                 db2_ignore.add(table)
+
+#         db1_commands = get_database_state(db1)
+#         db2_commands = get_database_state(db2)
+
+#         db1_commands = db1_commands.split(";")
+#         db2_commands = db2_commands.split(";")
+
+#         print("printing db1 comamnds\n", db1_commands)
+#         print("printint db2 commands\n", db2_commands)
+
+
+#         for command in db1_commands:
+#             if command.strip("`") and command.split()[2] not in db1_ignore:
+#                 final.append(command)
+        
+#         for command in db2_commands:
+#             if command.strip("`") and command.split()[2] not in db2_ignore and command not in final:
+#                 final.append(command)
+        
+#         final = ";\n".join(final)
+#         print(final)
+        
+#         for table in all_tables:
+#             if table in tables1:
+#                 drop_table(db1, table)
+#             elif table in tables2:
+#                 drop_table(db2, table)
+
+#         recreate(db1, final)
+#         commit(db1, f"Merged {db2} into {db1}")
+#         shutil.rmtree(get_directory(db2))
 
 def merge(db1: str, db2: str) -> None:
     if not check_init(db1) or not check_init(db2):
         raise Exception("dit not initialized")
     
-    history1 = pickle.load(open(get_directory(db1) + r"\past.lore", "rb"))
-    history2 = pickle.load(open(get_directory(db2) + r"\past.lore", "rb"))
-    recent1 = history1[-1]
-    recent2 = history2[-1]
+    db1_directory = get_directory(db1)
+    db2_directory = get_directory(db2)
     
-    if recent1 == recent2:
-        raise Exception("No changes to merge")
-    else:
-        tables1 = set(get_tables(db1))
-        tables2 = set(get_tables(db2))
-        common_tables = tables1.intersection(tables2)
+    #replace the database with the merged database
+    shutil.rmtree(db1_directory)
+    shutil.copytree(db2_directory, db1_directory)
+    shutil.rmtree(db2_directory)
 
-        schema1 = get_schema(db1)
-        schema2 = get_schema(db2)
-
-        db1_ignore = set()
-        db2_ignore = set()
-
-        for table in common_tables:
-            if schema1[table] != schema2[table]:
-                ignore = input(f"""Merge Conflict! Press Enter to resolve the conflict
-Database 1: {db1}
-Database 2: {db2}
-Enter 1 to keep changes from Database 1
-Enter 2 to keep changes from Database 2
-[1/2]: """)
-
-                if ignore == "1":
-                    db2_ignore.add(table)
-                elif ignore == "2":
-                    db1_ignore.add(table)
-                else:
-                    raise Exception("Invalid input")
-            
-        db1_commands = get_database_state(db1)
-        db2_commands = get_database_state(db2)
-
-        db1_commands = db1_commands.split(";")
-        db2_commands = db2_commands.split(";")
-
-        final = []
-        for command in db1_commands:
-            if command.strip() and command.split("`")[2] not in db1_ignore:
-                final.append(command)
+    #commit the merged database
+    commit(db1, f"Merged {db2} into {db1}")
+    
         
-        for command in db2_commands:
-            if command.strip() and command.split("`")[2] not in db2_ignore:
-                final.append(command)
-        
-        final = ";\n".join(final)
-        recreate(db1, final)
-        commit(db1, f"Merged {db2} into {db1}")
-        os.remove(get_directory(db2))
 
 def diff(db: str, hash: str = "recent") -> dict:
     '''Prints the difference between the current state of the database and the state at the given hash'''
@@ -485,6 +528,8 @@ def diff(db: str, hash: str = "recent") -> dict:
         
     # Drop the temp database
     drop_db(f"__temp__{db}")
+    temp_file = get_directory(db)
+    shutil.rmtree(temp_file)
 
     return {
         "minus_tables": minus_tables,

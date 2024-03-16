@@ -101,7 +101,7 @@ import importlib.util
 def cli():
     """Dit
     
-    Dit is a version control system for databases."""
+    Dit is a version control system for your databases."""
     pass
 
 def load_command(name: str, filepath: Path):
