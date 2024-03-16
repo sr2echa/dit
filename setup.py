@@ -22,4 +22,9 @@ setup(
     python_requires='>=3.6',
     long_description=discription,
     long_description_content_type="text/markdown",
+    entry_points='''
+        [console_scripts]
+        dit=Dit.core:app
+    ''',
 )
+

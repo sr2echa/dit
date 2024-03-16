@@ -1,3 +1,2 @@
-from .core import Initialize
-
-Initialize()
+import colorama
+colorama.init()

@@ -1,1 +1,4 @@
+setuptools
 mysql-connector-python
+click
+typer[all]
