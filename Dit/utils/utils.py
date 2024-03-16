@@ -459,7 +459,7 @@ def merge(db1: str, db2: str) -> None:
 
     #commit the merged database
     commit(db1, f"Merged {db2} into {db1}")
-    
+
         
 
 def diff(db: str, hash: str = "recent") -> dict:
@@ -537,6 +537,63 @@ def diff(db: str, hash: str = "recent") -> dict:
         "minus_rows": dict(minus_rows),
         "plus_rows": dict(plus_rows)
     }
+
+def get_visualize(db: str, hash: str=None) -> dict:
+    '''Returns the database state at the given hash'''
+    if not check_init(db):
+        raise Exception("dit not initialized")
+    
+    if hash == None:
+        hash = get_recent_hash(db)
+
+    if not os.path.exists(get_directory(db) + r"\{}.rarc".format(hash)):
+        raise Exception("commit does not exist")
+    
+    directory = get_directory(db) + r"\{}.rarc".format(hash)
+    compressed_data = open(directory, 'rb').read()
+    pickled_data = decompress_data(compressed_data)
+    unpickled_data = pickle.loads(pickled_data)
+    commands = unpickled_data[1]
+    config = get_config(db)
+    recreate_2(f"__temp__{db}", commands, config)
+    vitualize_data={}
+    #connect to the database
+    cnx = mysql.connector.connect(host=config['host'], port=config['port'], user=config['username'], password=config['password'])
+    cursor = cnx.cursor()
+    cursor.execute(f"USE __temp__{db}")
+    cursor.execute("SHOW TABLES")
+    tables = [table[0] for table in cursor]
+    for table in tables:
+        cursor.execute(f"SELECT * FROM {table}")
+        data = cursor.fetchall()
+        vitualize_data[table]=data
+    cursor.close()
+    cnx.close()
+    drop_db_2(f"__temp__{db}", config)
+    #add __meta__ key to the dictionary
+    vitualize_data["__meta__"]=[hash,unpickled_data[0]]
+    return vitualize_data
+
+def drop_db_2(db: str, config) -> None:
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
+    cursor.close()
+    cnx.close()
+
+def recreate_2(db: str, commands: str, config) -> None:
+    # config = get_config(db)
+    # print(config)
+    cnx = mysql.connector.connect(host=config['host'], port=config['port'], user=config['username'], password=config['password'])
+    cursor = cnx.cursor()
+    cursor.execute("DROP DATABASE IF EXISTS {};".format(db)) 
+    cursor.execute("CREATE DATABASE {};".format(db))
+    cursor.execute("USE {};".format(db))
+    # print(commands)
+    execute_multi_commands(cnx, commands)
+    cursor.execute(commands)
+    cursor.close()
+    cnx.close()
 
 if __name__ == "__main__":
     reset("tempppp", "d8b61a1035933a45bdad47b1d5d2bf413d6c13c0")
