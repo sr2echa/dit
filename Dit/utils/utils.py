@@ -162,9 +162,7 @@ def recreate(db: str, commands: str) -> None:
     # print(config)
     cnx = mysql.connector.connect(host=config['host'], port=config['port'], user=config['username'], password=config['password'])
     cursor = cnx.cursor()
-    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
-    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
-    cursor.execute("DROP DATABASE IF EXISTS {};".format(db))
+    cursor.execute("DROP DATABASE IF EXISTS {};".format(db)) 
     cursor.execute("CREATE DATABASE {};".format(db))
     cursor.execute("USE {};".format(db))
     # print(commands)
@@ -214,6 +212,8 @@ def drop_db(db: str) -> None:
     cursor.execute("DROP DATABASE IF EXISTS {}".format(db))
     cursor.close()
     cnx.close()
+    part = get_directory(db)
+    shutil.rmtree(part)
 
 def get_config(db:str) -> dict:
     with open(home_directory + r"\\" + db + r"\HEAD", "rb") as f:
@@ -436,13 +436,16 @@ def diff(db: str, hash: str = "recent") -> dict:
     pickled_data = decompress_data(compressed_data)
     unpickled_data = pickle.loads(pickled_data)
     commands = unpickled_data[1]
+    shutil.copytree(get_directory(db), get_directory(f"__temp__{db}"))
     recreate(f"__temp__{db}", commands)
 
     # Get the schema of the current database
     current_schema = get_schema(db)
+    # print(current_schema)
 
     # Get the schema of the temp database
     temp_schema = get_schema(f"__temp__{db}")
+    # print(temp_schema)
 
     minus_tables = []
     plus_tables = []
@@ -486,8 +489,8 @@ def diff(db: str, hash: str = "recent") -> dict:
     return {
         "minus_tables": minus_tables,
         "plus_tables": plus_tables,
-        "minus_rows": minus_rows,
-        "plus_rows": plus_rows
+        "minus_rows": dict(minus_rows),
+        "plus_rows": dict(plus_rows)
     }
 
 if __name__ == "__main__":
