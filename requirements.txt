@@ -1,4 +1,4 @@
 setuptools
 mysql-connector-python
-click
+rich-click
 typer[all]
