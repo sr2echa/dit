@@ -7,6 +7,7 @@ import shutil
 import zlib
 import hashlib
 from collections import defaultdict
+import requests
 
 
 # CONSTANTS
@@ -251,6 +252,10 @@ def drop_table(db: str, table: str) -> None:
     cursor.execute(f"DROP TABLE {table}")
     cursor.close()
     cnx.close()
+
+def zipdir(path, name):
+    shutil.make_archive(name, 'zip', path)
+    print("Zipped " + path + " to " + name + ".zip")
 
 
 # COMMANDS
@@ -614,6 +619,52 @@ def get_history(db: str) -> dict:
     return {
         "dummy": logs
     }
+
+def push(db: str, remote: str) -> None:
+    '''Pushes the current state of the database to the remote'''
+    if not check_init(db):
+        raise Exception("dit not initialized")
+    
+    zip_file_path = r".\{}.zip".format(db)
+    directory = get_directory(db)
+    url = remote + "/upload"
+
+    zipdir(directory, db)
+
+    with open(zip_file_path, 'rb') as file:
+        files = {'file': (zip_file_path, file, 'application/zip')}
+
+        response = requests.post(url, files=files)
+
+    if response.status_code == 200:
+        print('File uploaded successfully')
+    else:
+        print("Failed to upload file. Status code:", response.status_code)
+    
+def pull(db: str, remote: str) -> None:
+    filename = db + ".zip"
+    url = remote + r"/download" # URL of the Flask server
+    params = {'filename': filename}  # Pass filename as a query parameter
+    
+    response = requests.get(url, params=params)
+    
+    if response.status_code == 200:
+        with open(f"downloaded_{filename}", 'wb') as f:
+            f.write(response.content)
+        print("Zip file downloaded successfully")
+    else:
+        # print(filename)
+        print("Failed to download zip file:", response.text)
+    
+    shutil.unpack_archive(f"downloaded_{filename}", get_directory(db), "zip")
+    
+    recent_hash = get_recent_hash(db)
+    reset(db, recent_hash)
+
+if __name__ == "__main__":
+    # push("test", "http://localhost:5000")
+    # pull("test", "http://localhost:5000")
+    pass
 
 
 if __name__ == "__main__":
