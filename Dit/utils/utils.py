@@ -9,7 +9,6 @@ import hashlib
 from collections import defaultdict
 
 
-
 # CONSTANTS
 home_directory = os.path.expanduser('~')
 home_directory += r"\.dit"
@@ -34,6 +33,7 @@ def fetch_all_tables(database_name) -> list:
     config = get_config()
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
+    cursor.execute(f"USE {database_name}")
     cursor.execute(query)
     
     tables = [row[0] for row in cursor.fetchall()]
@@ -128,6 +128,7 @@ def get_database_state(database_name) -> str:
     config = get_config()
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
+    cursor.execute(f"USE {database_name}")
 
     output = "SET foreign_key_checks = 0;\n"
     for table in sorted_tables:
@@ -227,6 +228,31 @@ def get_config() -> dict:
     with open(home_directory + r"\config.json", "r") as f:
         return json.load(f)
 
+def get_recent_hash(db: str) -> str:
+    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    return history[-1]
+
+def get_table_data(db: str, table: str) -> list:
+    config = get_config()
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    cursor.execute("USE {}".format(db))
+    cursor.execute(f"SELECT * FROM {table}")
+    data = cursor.fetchall()
+    cursor.close()
+    cnx.close()
+    return data
+
+def get_databases() -> list:
+    config = get_config()
+    cnx = mysql.connector.connect(**config)
+    cursor = cnx.cursor()
+    cursor.execute("SHOW DATABASES")
+    databases = [db[0] for db in cursor]
+    cursor.close()
+    cnx.close()
+    return databases
+
 
 # COMMANDS
 def setup(user: str = "root", pwd: str = "root", host: str = "127.0.0.1", port: str = "3306") -> None:
@@ -264,6 +290,27 @@ def commit(db: str, msg: str) -> None:
         update_history(db, hash)
     else:
         print("No changes to commit")
+    
+def log(db: str) -> list:
+    if not check_init(db):
+        raise Exception("dit not initialized")
+    
+    history = pickle.load(open(get_directory(db) + r"\history.bin", "rb"))
+    history = history[::-1]
+
+    logs = []
+
+    for hash in history:
+        compressed_data = open(get_directory(db) + r"\{}.dbs".format(hash), 'rb').read()
+        pickled_data = decompress_data(compressed_data)
+        unpickled_data = pickle.loads(pickled_data)
+        logs.append({
+            "hash": hash,
+            "message": unpickled_data[0]
+        })
+    
+    return logs
+
 
 def reset(db: str, hash: str) -> None:
     if not check_init(db):
@@ -357,3 +404,77 @@ Enter 2 to keep changes from Database 2
         recreate(db1, final)
         commit(db1, f"Merged {db2} into {db1}")
         os.remove(get_directory(db2))
+
+def diff(db: str, hash: str = "recent") -> dict:
+    '''Prints the difference between the current state of the database and the state at the given hash'''
+    if not check_init(db):
+        raise Exception("dit not initialized")
+    
+    if hash == "recent":
+        hash = get_recent_hash(db)
+
+    if not os.path.exists(get_directory(db) + r"\{}.dbs".format(hash)):
+        raise Exception("commit does not exist")
+    
+    # Create new temp database using hash
+    directory = get_directory(db) + r"\{}.dbs".format(hash)
+    compressed_data = open(directory, 'rb').read()
+    pickled_data = decompress_data(compressed_data)
+    unpickled_data = pickle.loads(pickled_data)
+    commands = unpickled_data[1]
+    recreate(f"__temp__{db}", commands)
+
+    # Get the schema of the current database
+    current_schema = get_schema(db)
+
+    # Get the schema of the temp database
+    temp_schema = get_schema(f"__temp__{db}")
+
+    minus_tables = []
+    plus_tables = []
+    minus_rows = defaultdict(list)
+    plus_rows = defaultdict(list)
+
+    all_tables = set(current_schema.keys()).union(set(temp_schema.keys()))
+    for table in all_tables:
+        if table not in current_schema:
+            minus_tables.append(table)
+        elif table not in temp_schema:
+            plus_tables.append(table)
+        
+        # Compare schema of the tables if they exist in both databases
+        # If the schema is different, add the table to the modified_tables list
+        elif current_schema[table] != temp_schema[table]:
+            minus_tables.append(table)
+            plus_tables.append(table)
+        
+        # If the schema is the same, compare the data in the tables
+        else:
+            current_data = get_table_data(db, table)
+            temp_data = get_table_data(f"__temp__{db}", table)
+
+            # Convert data to set for O(1) lookup
+            current_data = set([tuple(row) for row in current_data])
+            temp_data = set([tuple(row) for row in temp_data])
+
+            new_rows = current_data - temp_data
+            removed_rows = temp_data - current_data
+
+            if new_rows:
+                plus_rows[table] = list(new_rows)
+
+            if removed_rows:
+                minus_rows[table] = list(removed_rows)
+        
+    # Drop the temp database
+    drop_db(f"__temp__{db}")
+
+    return {
+        "minus_tables": minus_tables,
+        "plus_tables": plus_tables,
+        "minus_rows": minus_rows,
+        "plus_rows": plus_rows
+    }
+
+if __name__ == "__main__":
+    print(log("test_db"))
