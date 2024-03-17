@@ -7,7 +7,7 @@ with open("requirements.txt", "r") as f:
     requirements = f.read().split("\n")
 
 setup(
-    name='Dit',
+    name='vbdit',
     version='0.0.1',
     author='Sreecharan S, Harish Chandran, Harish Barathi, Nidish TS',
     description='Version control for Databases',

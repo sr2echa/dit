@@ -4,10 +4,10 @@ app = Flask(__name__)
 
 json_data1 = {
     "__meta__" : [
-        "83248281481282389", "visualize database"
+        "7f61112bcecd967d4fbed3e05645c5a708eea1eb", "visualize database"
     ],
 
-    "table2": [
+    "Shopers": [
         ["Name", "age", "ID","phone no."],
         ["harish", "19", "001","982834324"],
         ["nidish", "20", "002","234324232"],
@@ -29,7 +29,7 @@ json_data1 = {
         ["nidish", "20", "002","234324232"],
         ["nidish", "20", "002","234324232"]
     ],
-    "table3: ": [
+    "Flight DB: ": [
         ["Name", "age", "ID","phone no."],
         ["harish", "19", "001","982834324"],
         ["nidish", "20", "002","234324232"],
@@ -51,7 +51,7 @@ json_data1 = {
         ["nidish", "20", "002","234324232"],
         ["nidish", "20", "002","234324232"]
     ],
-    "table1": [
+    "blacklisted": [
         ["Name", "age", "ID","phone no."],
         ["harish", "19", "001","982834324"],
         ["nidish", "20", "002","234324232"],
@@ -73,7 +73,7 @@ json_data1 = {
         ["nidish", "20", "002","234324232"],
         ["nidish", "20", "002","234324232"]
     ],
-    "table5": [
+    "Temp": [
         ["Name", "age", "ID","phone no.","Name", "age", "ID","phone no.","phone no.","Name", "age", "ID","phone no."],
         ["harish", "19", "001","982834324"],
         ["nidish", "20", "002","234324232"],

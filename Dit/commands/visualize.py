@@ -20,13 +20,14 @@ def cli(database, hash):
     Usage: dit vitualize -d "database_name" "hash"
     """
     json_data1 = utils.get_visualize(database, hash)
-    @app.route('/')
-    def index():
-        meta_data = json_data1.get("__meta__", [])
-        data_without_meta = {key: value for key, value in json_data1.items() if key != "__meta__"}
-        return render_template('template_vis.html', data=data_without_meta, meta_data= meta_data)
+    print(json_data1)
+    # @app.route('/')
+    # def index():
+    #     meta_data = json_data1.get("__meta__", [])
+    #     data_without_meta = {key: value for key, value in json_data1.items() if key != "__meta__"}
+    #     return render_template('template_vis.html', data=data_without_meta, meta_data= meta_data)
 
-    console.print(f"Starting Flask server to visualize {database} at {hash}...", style="bold green")
+    # console.print(f"Starting Flask server to visualize {database} at {hash}...", style="bold green")
     # Start the Flask server
     app.run(debug=True, port=5000)
 

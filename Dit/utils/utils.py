@@ -533,8 +533,8 @@ def diff(db: str, hash: str = "recent") -> dict:
         
     # Drop the temp database
     drop_db(f"__temp__{db}")
-    temp_file = get_directory(db)
-    shutil.rmtree(temp_file)
+    # temp_file = get_directory(db)
+    # shutil.rmtree(temp_file)
 
     return {
         "minus_tables": minus_tables,
