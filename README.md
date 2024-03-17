@@ -1,7 +1,6 @@
 <samp>
 
-> <h3><a>The Dit project has been published on 
-<a href="https://pypi.org/project/dbdit/"> PYPI</a></a></h3>
+> <h3>The Dit project has been published on <a href="https://pypi.org/project/dbdit/"> PYPI</a>!! Now anyone can harness the power of version control for their databases in 1 cmd!</h3>
 
 </samp>
 
