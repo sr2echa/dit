@@ -1,0 +1,29 @@
+{% extends "visualize_final.html" %}
+
+{% block content %}
+    {% for table_name, table_data in data.items() %}
+    <div class="table-wrapper draggable">
+        <div class="table-header">
+            <h2 class="table-title">{{ table_name }}</h2>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    {% for header in table_data[0] %}
+                    <th>{{ header }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_data[1:] %}
+                <tr>
+                    {% for value in row %}
+                    <td>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+{% endblock %}

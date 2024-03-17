@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 import os
 import zipfile, pickle,zlib
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='./templates')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -60,9 +60,9 @@ def render(filename):
         unpickled_data = pickle.loads(pickled_data)
         logs.append([unpickled_data[0], hash])
     
-    return {
-        "dummy": logs
-    }
+    data = {"dummy": logs}
+    return render_template('commit_v.html', data=data, length=len(logs))
+
 
 
 
