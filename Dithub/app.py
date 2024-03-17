@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 import os
-import zipfile
+import zipfile, pickle,zlib
 
 app = Flask(__name__)
 
@@ -39,6 +39,32 @@ def download():
         return send_file(zip_file_path, as_attachment=True)
     else:
         return "Zip file not found", 404
+
+
+@app.route('/render/<path:filename>', methods=['GET'])
+def render(filename):
+    '''Returns the history of the database'''
+
+    #check if a folder with "recieved_filename" exists
+    if not os.path.exists(f'received_{filename}'):
+        return jsonify({'error': 'Database not found'}), 404
+    
+    history = pickle.load(open(f'received_{filename}' + r"\past.lore", "rb"))
+    history = history[::-1]
+
+    logs = []
+
+    for hash in history:
+        compressed_data = open(f'received_{filename}'+ r"\{}.rarc".format(hash), 'rb').read()
+        pickled_data = zlib.decompress(compressed_data)
+        unpickled_data = pickle.loads(pickled_data)
+        logs.append([unpickled_data[0], hash])
+    
+    return {
+        "dummy": logs
+    }
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
