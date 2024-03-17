@@ -16,7 +16,7 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
-    file.save(file_name)
+    file.save(file_name+".zip")
     
     destination_folder = f'received_{file_name}'
     
@@ -25,7 +25,7 @@ def upload_file():
     
     destination_folder = os.path.abspath(destination_folder)
     
-    with zipfile.ZipFile(file_name, 'r') as zip_ref:
+    with zipfile.ZipFile(file_name+".zip", 'r') as zip_ref:
         zip_ref.extractall(destination_folder)
     
     return jsonify({'message': 'File uploaded and extracted successfully'}), 200
