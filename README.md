@@ -1,3 +1,6 @@
+>[!NOTE]
+> The Dit project has been published on [Pypi](https://pypi.org/project/dbdit/). You can install it using pip.
+
 ![image](https://github.com/sr2echa/dit/assets/65058816/791a94a6-2d97-4f10-9c02-d40f664db196)
 
 Dit revolutionizes database management by introducing a version control system tailored specifically for databases, akin to Git's role in source code management. It directly addresses a significant pain point in developer workflows: the complex and error-prone process of tracking, merging, and reverting database schema and content changes. By automating and streamlining these tasks, Dit significantly enhances developer productivity in several key areas:
