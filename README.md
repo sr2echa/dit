@@ -1,5 +1,10 @@
-> [!NOTE]
-> The Dit project has been published on [Pypi](https://pypi.org/project/dbdit/). You can install it using pip.
+<samp>
+
+> <h3><a>The Dit project has been published on 
+<a href="https://pypi.org/project/dbdit/"> PYPI</a></a></h3>
+
+</samp>
+
 
 ![image](https://github.com/sr2echa/dit/assets/65058816/791a94a6-2d97-4f10-9c02-d40f664db196)
 
