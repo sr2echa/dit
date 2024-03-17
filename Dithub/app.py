@@ -61,7 +61,7 @@ def render(filename):
         logs.append([unpickled_data[0], hash])
     
     data = {"dummy": logs}
-    return render_template('commit_v.html', data=data, length=len(logs))
+    return render_template('dithub.html', data=data, length=len(logs))
 
 
 
