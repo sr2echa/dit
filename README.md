@@ -1,6 +1,8 @@
 <samp>
 
-> <h3>The Dit project has been published on <a href="https://pypi.org/project/dbdit/"> PYPI</a>!! Now anyone can harness the power of version control for their databases in 1 cmd!</h3>
+> [!NOTE]
+> The Dit project has been published on <a href="https://pypi.org/project/dbdit/"> PyPi</a>!! Now anyone can harness the power of version control for their databases in 1 cmd!
+> Also, check out the demo on [YouTube](https://www.youtube.com/watch?v=BncRLuqA3ZU)
 
 </samp>
 
@@ -20,6 +22,22 @@ Dit revolutionizes database management by introducing a version control system t
 **Enhanced Data Management:** For projects involving data analysis or machine learning, Dit provides version control for datasets, enabling more efficient experimentation and collaboration on data-driven projects.
 
 By providing a robust, intuitive tool for database version control, Dit fills a crucial gap in the modern developer's toolkit, making database-related tasks safer, faster, and more collaborative. This contributes significantly to the developer productivity track by reducing manual overhead, speeding up development cycles, and fostering better collaboration and consistency across projects.
+
+# 🪄 Demo
+<samp>
+ 
+ Check it out on [YouTube](https://youtu.be/BncRLuqA3ZU) <br><br>
+ Or <br><br>
+ Click on the image below
+ 
+</samp>
+
+<div align="left">
+      <a href="[https://www.youtube.com/watch?v=5yLzZikS15k](https://www.youtube.com/watch?v=BncRLuqA3ZU)">
+         <img src="https://github.com/user-attachments/assets/e7e497d6-32ca-4189-a200-fa5ac6d9e06e" style="width:50%;">
+      </a>
+</div>
+
 
 # 🦄 Installation
 #### 1. Clone the repo
